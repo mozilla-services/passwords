@@ -24,11 +24,11 @@ main =
 
 type Msg
     = Draw
-    | NewWord Int
+    | NewWords (List Int)
 
 
 type alias Model =
-    { word : String
+    { words : String
     , wordlist : List String
     , wordlistLength : Int
     }
@@ -53,20 +53,25 @@ update message model =
         Draw ->
             ( model, drawWord model.wordlistLength )
 
-        NewWord index ->
+        NewWords indices ->
             let
-                newWord =
-                    model.wordlist
-                        |> List.drop (index - 1)
-                        |> List.head
-                        |> Maybe.withDefault ""
+                newWords =
+                    indices
+                        |> List.map
+                            (\index ->
+                                model.wordlist
+                                    |> List.drop (index - 1)
+                                    |> List.head
+                                    |> Maybe.withDefault ""
+                            )
+                        |> String.join " "
             in
-                ( { model | word = newWord }, Cmd.none )
+                ( { model | words = newWords }, Cmd.none )
 
 
 drawWord : Int -> Cmd Msg
 drawWord size =
-    Random.generate NewWord (Random.int 0 size)
+    Random.generate NewWords (Random.list 6 (Random.int 0 size))
 
 
 
@@ -88,6 +93,6 @@ view model =
         []
         [ Html.button
             [ Html.Events.onClick Draw ]
-            [ Html.text "New word" ]
-        , Html.text <| "Word: " ++ model.word
+            [ Html.text "New words" ]
+        , Html.text <| "Words: " ++ model.words
         ]
