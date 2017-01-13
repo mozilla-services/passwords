@@ -1,6 +1,7 @@
 port module Main exposing (..)
 
 import Html
+import Html.Attributes
 import Html.Events
 import Random
 
@@ -25,10 +26,12 @@ main =
 type Msg
     = Draw
     | NewWords (List Int)
+    | NewPassphraseLength String
 
 
 type alias Model =
-    { words : String
+    { passphrase : String
+    , passphraseLength : Int
     , wordlist : List String
     , wordlistLength : Int
     }
@@ -40,7 +43,7 @@ init wordlist =
         wordlistLength =
             List.length wordlist
     in
-        ( Model "" wordlist wordlistLength, drawWord wordlistLength )
+        ( Model "" 6 wordlist wordlistLength, drawWord 6 wordlistLength )
 
 
 
@@ -51,7 +54,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
         Draw ->
-            ( model, drawWord model.wordlistLength )
+            ( model, drawWord model.passphraseLength model.wordlistLength )
 
         NewWords indices ->
             let
@@ -66,12 +69,23 @@ update message model =
                             )
                         |> String.join " "
             in
-                ( { model | words = newWords }, Cmd.none )
+                ( { model | passphrase = newWords }, Cmd.none )
+
+        NewPassphraseLength lengthString ->
+            let
+                length =
+                    String.toInt lengthString
+                        |> Result.withDefault 6
+                        |> clamp 1 30
+            in
+                ( { model | passphraseLength = length }
+                , drawWord length model.wordlistLength
+                )
 
 
-drawWord : Int -> Cmd Msg
-drawWord size =
-    Random.generate NewWords (Random.list 6 (Random.int 0 size))
+drawWord : Int -> Int -> Cmd Msg
+drawWord numWords size =
+    Random.generate NewWords (Random.list numWords (Random.int 0 size))
 
 
 
@@ -91,8 +105,31 @@ view : Model -> Html.Html Msg
 view model =
     Html.div
         []
-        [ Html.button
+        [ Html.label
+            []
+            [ Html.text "Passphrase length: "
+            , Html.input
+                [ Html.Attributes.type_ "number"
+                , Html.Attributes.value (toString model.passphraseLength)
+                , Html.Attributes.min "1"
+                , Html.Attributes.max "30"
+                , Html.Events.onInput NewPassphraseLength
+                ]
+                []
+            , Html.input
+                [ Html.Attributes.type_ "range"
+                , Html.Attributes.value (toString model.passphraseLength)
+                , Html.Attributes.min "1"
+                , Html.Attributes.max "30"
+                , Html.Events.onInput NewPassphraseLength
+                ]
+                []
+            ]
+        , Html.br [] []
+        , Html.button
             [ Html.Events.onClick Draw ]
-            [ Html.text "New words" ]
-        , Html.text <| "Words: " ++ model.words
+            [ Html.text "New passphrase" ]
+        , Html.h2
+            []
+            [ Html.text model.passphrase ]
         ]
